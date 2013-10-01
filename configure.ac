@@ -970,6 +970,9 @@ case "${target}" in
     ;;
   moxie-*-*)
     noconfigdirs="$noconfigdirs gprof"
+  oldland-*-*)
+    noconfigdirs="$noconfigdirs gprof gdb"
+    ;;
     ;;
   h8300*-*-*)
     noconfigdirs="$noconfigdirs target-libgloss"

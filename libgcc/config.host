@@ -137,6 +137,8 @@ mips*-*-*)
 	cpu_type=mips
 	tmake_file=mips/t-mips
 	;;
+oldland*) cpu_type=oldland
+	;;
 powerpc*-*-*)
 	cpu_type=rs6000
 	;;
@@ -796,6 +798,9 @@ moxie-*-rtems*)
 	tmake_file="$tmake_file moxie/t-moxie t-softfp-sfdf t-softfp-excl t-softfp"
 	# Don't use default.
 	extra_parts=
+	;;
+oldland-*-elf)
+	tmake_file="oldland/t-oldland"
 	;;
 pdp11-*-*)
 	tmake_file="pdp11/t-pdp11 t-fdpbit"

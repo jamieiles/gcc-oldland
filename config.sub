@@ -299,6 +299,7 @@ case $basic_machine in
 	| nds32 | nds32le | nds32be \
 	| nios | nios2 \
 	| ns16k | ns32k \
+	| oldland \
 	| open8 \
 	| or32 \
 	| pdp10 | pdp11 | pj | pjl \

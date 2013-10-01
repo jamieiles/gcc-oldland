@@ -1044,6 +1044,12 @@ moxie-*-rtems*)
 	tmake_file="${tmake_file} moxie/t-moxie t-rtems"
 	tm_file="moxie/moxie.h dbxelf.h elfos.h moxie/rtems.h rtems.h newlib-stdint.h"
 	;;
+oldland-*-elf)
+	gas=yes
+	gnu_ld=yes
+	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h"
+	tmake_file="${tmake_file} oldland/t-oldland"
+	;;
 h8300-*-rtems*)
 	tmake_file="h8300/t-h8300 t-rtems h8300/t-rtems"
 	tm_file="h8300/h8300.h dbxelf.h elfos.h h8300/elf.h h8300/rtems.h rtems.h newlib-stdint.h"
