@@ -2297,7 +2297,7 @@ ipa_write_summaries_1 (lto_symtab_encoder_t encoder)
 /* Write out summaries for all the nodes in the callgraph.  */
 
 void
-ipa_write_summaries (void)
+ipa_write_summaries (bool is_omp)
 {
   lto_symtab_encoder_t encoder;
   int i, order_pos;
@@ -2305,8 +2305,10 @@ ipa_write_summaries (void)
   struct cgraph_node *node;
   struct cgraph_node **order;
 
-  if (!flag_generate_lto || seen_error ())
+  if (!(flag_generate_lto || flag_openmp) || seen_error () )
     return;
+
+  select_what_to_dump (is_omp);
 
   encoder = lto_symtab_encoder_new (false);
 
