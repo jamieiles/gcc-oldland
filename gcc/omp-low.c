@@ -5,21 +5,21 @@
 
    Copyright (C) 2005-2014 Free Software Foundation, Inc.
 
-This file is part of GCC.
+   This file is part of GCC.
 
-GCC is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free
-Software Foundation; either version 3, or (at your option) any later
-version.
+   GCC is free software; you can redistribute it and/or modify it under
+   the terms of the GNU General Public License as published by the Free
+   Software Foundation; either version 3, or (at your option) any later
+   version.
 
-GCC is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or
-FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-for more details.
+   GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or
+   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+   for more details.
 
-You should have received a copy of the GNU General Public License
-along with GCC; see the file COPYING3.  If not see
-<http://www.gnu.org/licenses/>.  */
+   You should have received a copy of the GNU General Public License
+   along with GCC; see the file COPYING3.  If not see
+   <http://www.gnu.org/licenses/>.  */
 
 #include "config.h"
 #include "system.h"
@@ -72,6 +72,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree-nested.h"
 #include "tree-eh.h"
 #include "cilk.h"
+#include "lto-section-names.h"
 
 
 /* Lowering of OpenMP parallel and workshare constructs proceeds in two
@@ -12320,8 +12321,8 @@ omp_finish_file (void)
 {
   struct cgraph_node *node;
   struct varpool_node *vnode;
-  const char *funcs_section_name = ".offload_func_table_section";
-  const char *vars_section_name = ".offload_var_table_section";
+  const char *funcs_section_name = OFFLOAD_FUNC_TABLE_SECTION_NAME;
+  const char *vars_section_name = OFFLOAD_VAR_TABLE_SECTION_NAME;
   vec<tree, va_gc> *v_funcs, *v_vars;
 
   vec_alloc (v_vars, 0);
