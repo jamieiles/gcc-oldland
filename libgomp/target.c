@@ -25,6 +25,7 @@
 /* This file handles the maintainence of threads in response to team
    creation and termination.  */
 
+#include "config.h"
 #include "libgomp.h"
 #include <limits.h>
 #include <stdbool.h>
@@ -820,23 +821,6 @@ GOMP_teams (unsigned int num_teams, unsigned int thread_limit)
 
 #ifdef PLUGIN_SUPPORT
 
-/* This function checks if the given string FNAME matches
-   "libgomp-plugin-*.so.1".  */
-static bool
-gomp_check_plugin_file_name (const char *fname)
-{
-  const char *prefix = "libgomp-plugin-";
-  const char *suffix = ".so.1";
-  if (!fname)
-    return false;
-  if (strncmp (fname, prefix, strlen (prefix)) != 0)
-    return false;
-  if (strncmp (fname + strlen (fname) - strlen (suffix), suffix,
-	       strlen (suffix)) != 0)
-    return false;
-  return true;
-}
-
 /* This function tries to load plugin for DEVICE.  Name of plugin is passed
    in PLUGIN_NAME.
    Plugin handle and handles of the found functions are stored in the
@@ -846,17 +830,9 @@ static bool
 gomp_load_plugin_for_device (struct gomp_device_descr *device,
 			     const char *plugin_name)
 {
-  char *err = NULL;
-
-  /* Clear any existing error.  */
-  dlerror ();
-
   device->plugin_handle = dlopen (plugin_name, RTLD_LAZY);
   if (!device->plugin_handle)
-    {
-      err = dlerror ();
-      goto out;
-    }
+    return false;
 
   /* Check if all required functions are available in the plugin and store
      their handlers.  */
@@ -864,9 +840,8 @@ gomp_load_plugin_for_device (struct gomp_device_descr *device,
   do									\
     {									\
       device->f##_func = dlsym (device->plugin_handle, #f);		\
-      err = dlerror ();							\
-      if (err != NULL)							\
-	goto out;							\
+      if (!device->f##_func)						\
+	return false;							\
     }									\
   while (0)
   DLSYM (get_type);
@@ -881,14 +856,7 @@ gomp_load_plugin_for_device (struct gomp_device_descr *device,
   DLSYM (device_run);
 #undef DLSYM
 
- out:
-  if (err != NULL)
-    {
-      gomp_error ("while loading %s: %s", plugin_name, err);
-      if (device->plugin_handle)
-	dlclose (device->plugin_handle);
-    }
-  return err == NULL;
+  return true;
 }
 
 /* This function finds OFFLOAD_IMAGES corresponding to DEVICE type, and
@@ -906,68 +874,71 @@ gomp_register_images_for_device (struct gomp_device_descr *device)
     }
 }
 
-/* This functions scans folder, specified in environment variable
-   LIBGOMP_PLUGIN_PATH, and loads all suitable libgomp plugins from this folder.
-   For a plugin to be suitable, its name should be "libgomp-plugin-*.so.1" and
-   it should implement a certain set of functions.
+/* This function parses the list of offloading targets and tries to load
+   the plugins for these targets.
    Result of this function is properly initialized variable NUM_DEVICES and
    array DEVICES, containing all plugins and their callback handles.  */
 static void
 gomp_find_available_plugins (void)
 {
-  char *plugin_path = NULL;
-  DIR *dir = NULL;
-  struct dirent *ent;
-  char plugin_name[PATH_MAX];
+  const char *prefix ="libgomp-plugin-";
+  const char *suffix = ".so.1";
+  const char *cur, *next;
+  char *plugin_name;
 
   num_devices = 0;
   devices = NULL;
 
-  plugin_path = getenv ("LIBGOMP_PLUGIN_PATH");
-  if (!plugin_path)
-    goto out;
+  cur = OFFLOAD_TARGETS;
+  if (*cur)
+    do
+      {
+	struct gomp_device_descr current_device;
 
-  dir = opendir (plugin_path);
-  if (!dir)
-    goto out;
+	next = strchr (cur, ':');
 
-  while ((ent = readdir (dir)) != NULL)
-    {
-      struct gomp_device_descr current_device;
-      if (!gomp_check_plugin_file_name (ent->d_name))
-	continue;
-      if (strlen (plugin_path) + 1 + strlen (ent->d_name) >= PATH_MAX)
-	continue;
-      strcpy (plugin_name, plugin_path);
-      strcat (plugin_name, "/");
-      strcat (plugin_name, ent->d_name);
-      if (!gomp_load_plugin_for_device (&current_device, plugin_name))
-	continue;
-      devices = realloc (devices, (num_devices + 1)
-				  * sizeof (struct gomp_device_descr));
-      if (devices == NULL)
-	{
-	  num_devices = 0;
-	  goto out;
-	}
+	plugin_name = (char *) malloc (1 + (next ? next - cur : strlen (cur))
+				       + strlen (prefix) + strlen (suffix));
+	if (!plugin_name)
+	  {
+	    num_devices = 0;
+	    break;
+	  }
 
-      /* FIXME: Properly handle multiple devices of the same type.  */
-      if (current_device.get_num_devices_func () >= 1)
-	{
-	  current_device.id = num_devices + 1;
-	  current_device.type = current_device.get_type_func ();
-	  current_device.is_initialized = false;
-	  current_device.dev_splay_tree.root = NULL;
-	  gomp_register_images_for_device (&current_device);
-	  devices[num_devices] = current_device;
-	  gomp_mutex_init (&devices[num_devices].dev_env_lock);
-	  num_devices++;
-	}
-    }
+	strcpy (plugin_name, prefix);
+	strncat (plugin_name, cur, next ? next - cur : strlen (cur));
+	strcat (plugin_name, suffix);
 
- out:
-  if (dir)
-    closedir (dir);
+	if (gomp_load_plugin_for_device (&current_device, plugin_name))
+	  {
+	    devices = realloc (devices, (num_devices + 1)
+			       * sizeof (struct gomp_device_descr));
+	    if (!devices)
+	      {
+		num_devices = 0;
+		free (plugin_name);
+		break;
+	      }
+
+	    /* FIXME: Properly handle multiple devices of the same type.  */
+	    if (current_device.get_num_devices_func () >= 1)
+	      {
+		current_device.id = num_devices + 1;
+		current_device.type = current_device.get_type_func ();
+		current_device.is_initialized = false;
+		current_device.dev_splay_tree.root = NULL;
+		gomp_register_images_for_device (&current_device);
+		devices[num_devices] = current_device;
+		gomp_mutex_init (&devices[num_devices].dev_env_lock);
+		num_devices++;
+	      }
+	  }
+
+	free (plugin_name);
+	cur = next + 1;
+      }
+    while (next);
+
   free (offload_images);
   offload_images = NULL;
   num_offload_images = 0;

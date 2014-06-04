@@ -282,6 +282,43 @@ else
   multilib_arg=
 fi
 
+AC_ARG_ENABLE(as-accelerator-for,
+  [AS_HELP_STRING([--enable-as-accelerator-for],
+  [enable target implementation of OpenMP functions])],
+[
+  AC_DEFINE(OFFLOAD_LIBRARY, 1,
+   [Define if this library should be used on target device.])
+  enable_as_accelerator=yes
+], [enable_as_accelerator=no])
+AC_SUBST(enable_as_accelerator)
+
+offload_targets=
+AC_ARG_ENABLE(offload-targets,
+  [AS_HELP_STRING([--enable-offload-targets=LIST],
+  [enable offloading to devices from LIST])],
+[
+  if test x$enable_offload_targets = x; then
+    AC_MSG_ERROR([no offload targets specified])
+  else
+    for tgt in $enable_offload_targets; do
+      case $tgt in
+        *-intelmic-*)
+          offload_target_name="mic" ;;
+        *)
+          AC_MSG_ERROR([unknown offload target specified]) ;;
+      esac
+      if test x$offload_targets = x; then
+        offload_targets=$offload_target_name
+      else
+        offload_targets=$offload_targets,$offload_target_name
+      fi
+    done
+  fi
+])
+offload_targets=`echo $offload_targets | sed -e 's#,#:#g'`
+AC_DEFINE_UNQUOTED(OFFLOAD_TARGETS, "$offload_targets",
+ [Define to hold the list of target names suitable for offloading.])
+
 # Set up the set of libraries that we need to link against for libgomp.
 # Note that the GOMP_SELF_SPEC in gcc.c may force -pthread,
 # which will force linkage against -lpthread (or equivalent for the system).
