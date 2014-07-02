@@ -62,6 +62,7 @@ proc libgomp_init { args } {
     global TESTING_IN_BUILD_TREE
     global target_triplet
     global always_ld_library_path
+    global acceldir
 
     set blddir [lookfor_file [get_multilibs] libgomp]
 
@@ -106,6 +107,16 @@ proc libgomp_init { args } {
 
     # Compute what needs to be put into LD_LIBRARY_PATH
     set always_ld_library_path ".:${blddir}/.libs"
+
+    # Add liboffloadmic build directory in LD_LIBRARY_PATH to support
+    # non-fallback testing of '#pragma omp target' for x86 architecture
+    if { [string match "i?86-*-*" $target_triplet]
+	|| [string match "x86_64-*-*" $target_triplet] } {
+	append always_ld_library_path ":${blddir}/../liboffloadmic/.libs"
+	append always_ld_library_path ":${blddir}/../liboffloadmic/plugin/.libs"
+	# libstdc++ is required by liboffloadmic
+	append always_ld_library_path ":${blddir}/../libstdc++-v3/src/.libs"
+    }
 
     # Compute what needs to be added to the existing LD_LIBRARY_PATH.
     if {$gccdir != ""} {
@@ -169,6 +180,10 @@ proc libgomp_init { args } {
 
     # Disable color diagnostics
     lappend ALWAYS_CFLAGS "additional_flags=-fdiagnostics-color=never"
+
+    # Required to support non-fallback testing of '#pragma omp target'.
+    # Help GCC to find target mkoffload.
+    lappend ALWAYS_CFLAGS "additional_flags=-B${acceldir}"
 }
 
 #
@@ -238,4 +253,18 @@ proc libgomp_option_proc { option } {
     } else {
 	return 0
     }
+}
+
+# Return 1 if target device is available.
+proc check_effective_target_target_device { } {
+    return [check_runtime_nocache target_device_available_ {
+      #include <omp.h>
+      int main ()
+	{
+	  int a;
+	  #pragma omp target map(from: a)
+	    a = omp_is_initial_device ();
+	  return a;
+	}
+    } ]
 }
