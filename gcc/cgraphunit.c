@@ -2000,13 +2000,25 @@ output_in_order (void)
   free (nodes);
 }
 
-/* Collect all global variables with "omp declare target" attribute into
-   OFFLOAD_VARS.  It will be streamed out in ipa_write_summaries.  */
+/* Check whether there is at least one function or global variable to offload.
+   Also collect all such global variables into OFFLOAD_VARS, the functions were
+   already collected in omp-low.c.  They will be streamed out in
+   ipa_write_summaries.  */
 
-static void
-init_offload_var_table (void)
+static bool
+initialize_offload (void)
 {
+  bool have_offload = false;
+  struct cgraph_node *node;
   struct varpool_node *vnode;
+
+  FOR_EACH_DEFINED_FUNCTION (node)
+    if (lookup_attribute ("omp declare target", DECL_ATTRIBUTES (node->decl)))
+      {
+	have_offload = true;
+	break;
+      }
+
   FOR_EACH_DEFINED_VARIABLE (vnode)
     {
       if (!lookup_attribute ("omp declare target",
@@ -2014,19 +2026,31 @@ init_offload_var_table (void)
 	  || TREE_CODE (vnode->decl) != VAR_DECL
 	  || DECL_SIZE (vnode->decl) == 0)
 	continue;
+      have_offload = true;
       vec_safe_push (offload_vars, vnode->decl);
     }
+
+  return have_offload;
 }
 
 static void
 ipa_passes (void)
 {
+  bool have_offload = false;
   gcc::pass_manager *passes = g->get_passes ();
 
   set_cfun (NULL);
   current_function_decl = NULL;
   gimple_register_cfg_hooks ();
   bitmap_obstack_initialize (NULL);
+
+  if (!in_lto_p && flag_openmp)
+    {
+      have_offload = initialize_offload ();
+      /* OpenMP offloading requires LTO infrastructure.  */
+      if (have_offload)
+	flag_generate_lto = 1;
+    }
 
   invoke_plugin_callbacks (PLUGIN_ALL_IPA_PASSES_START, NULL);
 
@@ -2066,10 +2090,7 @@ ipa_passes (void)
 
   if (!in_lto_p)
     {
-      init_offload_var_table ();
-
-      if (flag_openmp && !(vec_safe_is_empty (offload_funcs)
-			   && vec_safe_is_empty (offload_vars)))
+      if (have_offload)
 	{
 	  offload_lto_mode = true;
 	  section_name_prefix = OMP_SECTION_NAME_PREFIX;

@@ -12386,6 +12386,12 @@ omp_finish_file (void)
 				   get_identifier (".omp_var_table"),
 				   vars_decl_type);
       TREE_STATIC (funcs_decl) = TREE_STATIC (vars_decl) = 1;
+      /* Do not align tables more than TYPE_ALIGN (pointer_sized_int_node),
+	 otherwise a joint table in a binary will contain padding between
+	 tables from multiple object files.  */
+      DECL_USER_ALIGN (funcs_decl) = DECL_USER_ALIGN (vars_decl) = 1;
+      DECL_ALIGN (funcs_decl) = TYPE_ALIGN (funcs_decl_type);
+      DECL_ALIGN (vars_decl) = TYPE_ALIGN (vars_decl_type);
       DECL_INITIAL (funcs_decl) = ctor_f;
       DECL_INITIAL (vars_decl) = ctor_v;
       set_decl_section_name (funcs_decl, funcs_section_name);

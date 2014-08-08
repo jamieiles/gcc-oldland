@@ -2305,7 +2305,7 @@ ipa_write_summaries (void)
   struct cgraph_node *node;
   struct cgraph_node **order;
 
-  if (!(flag_generate_lto || flag_openmp) || seen_error () )
+  if (!flag_generate_lto || seen_error ())
     return;
 
   select_what_to_dump ();

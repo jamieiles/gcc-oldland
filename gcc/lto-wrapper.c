@@ -616,6 +616,7 @@ run_gcc (unsigned argc, char *argv[])
   unsigned int decoded_options_count;
   struct obstack argv_obstack;
   int new_head_argc;
+  bool have_lto = false;
   bool have_offload = false;
 
   /* Get the driver and options.  */
@@ -665,6 +666,11 @@ run_gcc (unsigned argc, char *argv[])
 	  close (fd);
 	  continue;
 	}
+      /* We may choose not to write out this .opts section in the future.  In
+	 that case we'll have to use something else to look for.  */
+      if (simple_object_find_section (sobj, OMP_SECTION_NAME_PREFIX "." "opts",
+				      &offset, &length, &errmsg, &err))
+	have_offload = true;
       if (!simple_object_find_section (sobj, LTO_SECTION_NAME_PREFIX "." "opts",
 				       &offset, &length, &errmsg, &err))
 	{
@@ -672,11 +678,7 @@ run_gcc (unsigned argc, char *argv[])
 	  close (fd);
 	  continue;
 	}
-      /* We may choose not to write out this .opts section in the future.  In
-	 that case we'll have to use something else to look for.  */
-      if (simple_object_find_section (sobj, OMP_SECTION_NAME_PREFIX "." "opts",
-				      &offset, &length, &errmsg, &err))
-	have_offload = true;
+      have_lto = true;
       lseek (fd, file_offset + offset, SEEK_SET);
       data = (char *)xmalloc (length);
       read (fd, data, length);
@@ -867,6 +869,32 @@ run_gcc (unsigned argc, char *argv[])
 
   /* Remember at which point we can scrub args to re-use the commons.  */
   new_head_argc = obstack_object_size (&argv_obstack) / sizeof (void *);
+
+  if (have_offload)
+    {
+      compile_images_for_openmp_targets (argc, argv);
+      if (offload_names)
+	{
+	  find_ompbeginend ();
+	  for (i = 0; offload_names[i]; i++)
+	    printf ("%s\n", offload_names[i]);
+	  free_array_of_ptrs ((void **) offload_names, i);
+	}
+    }
+
+  if (ompbegin)
+    printf ("%s\n", ompbegin);
+
+  /* If object files contain offload sections, but do not contain LTO sections,
+     then there is no need to perform a link-time recompilation, i.e.
+     lto-wrapper is used only for a compilation of offload images.  */
+  if (have_offload && !have_lto)
+    {
+      for (i = 1; i < argc; ++i)
+	if (strncmp (argv[i], "-fresolution=", sizeof ("-fresolution=") - 1))
+	  printf ("%s\n", argv[i]);
+      goto finish;
+    }
 
   if (lto_mode == LTO_MODE_LTO)
     {
@@ -1081,25 +1109,6 @@ cont:
 	  for (i = 0; i < nr; ++i)
 	    maybe_unlink (input_names[i]);
 	}
-      if (have_offload)
-	{
-	  compile_images_for_openmp_targets (argc, argv);
-	  if (offload_names)
-	    {
-	      find_ompbeginend ();
-	      for (i = 0; offload_names[i]; i++)
-		{
-		  fputs (offload_names[i], stdout);
-		  putc ('\n', stdout);
-		}
-	      free_array_of_ptrs ((void **)offload_names, i);
-	    }
-	}
-      if (ompbegin)
-	{
-	  fputs (ompbegin, stdout);
-	  putc ('\n', stdout);
-	}
 
       for (i = 0; i < nr; ++i)
 	{
@@ -1107,17 +1116,16 @@ cont:
 	  putc ('\n', stdout);
 	  free (input_names[i]);
 	}
-      if (ompend)
-	{
-	  fputs (ompend, stdout);
-	  putc ('\n', stdout);
-	}
       nr = 0;
       free (output_names);
       free (input_names);
       free (list_option_full);
       obstack_free (&env_obstack, NULL);
     }
+
+finish:
+  if (ompend)
+    printf ("%s\n", ompend);
 
   obstack_free (&argv_obstack, NULL);
 }
