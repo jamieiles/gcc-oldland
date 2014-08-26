@@ -9238,6 +9238,21 @@ lower_omp_critical (gimple_stmt_iterator *gsi_p, omp_context *ctx)
 	  DECL_COMMON (decl) = 1;
 	  DECL_ARTIFICIAL (decl) = 1;
 	  DECL_IGNORED_P (decl) = 1;
+
+	  /* If '#pragma omp critical' is inside target region, the symbol must
+	     have an 'omp declare target' attribute.  */
+	  omp_context *octx;
+	  for (octx = ctx->outer; octx; octx = octx->outer)
+	    if (gimple_code (octx->stmt) == GIMPLE_OMP_TARGET
+		&& gimple_omp_target_kind (octx->stmt)
+		  == GF_OMP_TARGET_KIND_REGION)
+	      {
+		DECL_ATTRIBUTES (decl)
+		  = tree_cons (get_identifier ("omp declare target"),
+			       NULL_TREE, DECL_ATTRIBUTES (decl));
+		break;
+	      }
+
 	  varpool_node::finalize_decl (decl);
 
 	  splay_tree_insert (critical_name_mutexes, (splay_tree_key) name,
