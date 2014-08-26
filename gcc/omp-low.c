@@ -286,6 +286,16 @@ is_parallel_ctx (omp_context *ctx)
 }
 
 
+/* Return true if CTX is for an omp target region.  */
+
+static inline bool
+is_targetreg_ctx (omp_context *ctx)
+{
+  return gimple_code (ctx->stmt) == GIMPLE_OMP_TARGET
+	 && gimple_omp_target_kind (ctx->stmt) == GF_OMP_TARGET_KIND_REGION;
+}
+
+
 /* Return true if CTX is for an omp task.  */
 
 static inline bool
@@ -1959,9 +1969,7 @@ create_omp_child_function (omp_context *ctx, bool task_copy)
     {
       omp_context *octx;
       for (octx = ctx; octx; octx = octx->outer)
-	if (gimple_code (octx->stmt) == GIMPLE_OMP_TARGET
-	    && gimple_omp_target_kind (octx->stmt)
-	       == GF_OMP_TARGET_KIND_REGION)
+	if (is_targetreg_ctx (octx))
 	  {
 	    target_p = true;
 	    break;
@@ -2617,8 +2625,7 @@ check_omp_nesting_restrictions (gimple stmt, omp_context *ctx)
       break;
     case GIMPLE_OMP_TARGET:
       for (; ctx != NULL; ctx = ctx->outer)
-	if (gimple_code (ctx->stmt) == GIMPLE_OMP_TARGET
-	    && gimple_omp_target_kind (ctx->stmt) == GF_OMP_TARGET_KIND_REGION)
+	if (is_targetreg_ctx (ctx))
 	  {
 	    const char *name;
 	    switch (gimple_omp_target_kind (stmt))
@@ -9243,9 +9250,7 @@ lower_omp_critical (gimple_stmt_iterator *gsi_p, omp_context *ctx)
 	     have an 'omp declare target' attribute.  */
 	  omp_context *octx;
 	  for (octx = ctx->outer; octx; octx = octx->outer)
-	    if (gimple_code (octx->stmt) == GIMPLE_OMP_TARGET
-		&& gimple_omp_target_kind (octx->stmt)
-		  == GF_OMP_TARGET_KIND_REGION)
+	    if (is_targetreg_ctx (octx))
 	      {
 		DECL_ATTRIBUTES (decl)
 		  = tree_cons (get_identifier ("omp declare target"),
