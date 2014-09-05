@@ -286,18 +286,14 @@ case ${with_newlib} in
   yes) skipdirs=`echo " ${skipdirs} " | sed -e 's/ target-newlib / /'` ;;
 esac
 
-offload_targets=
-
 AC_ARG_ENABLE(offload-targets,
 [AS_HELP_STRING([--enable-offload-targets=LIST],
  [enable offloading to devices from LIST])],
 [
-  if test x$enable_offload_targets = x; then
+  if test x"$enable_offload_targets" = x; then
     AC_MSG_ERROR([no offload targets specified])
   fi
 ], [enable_offload_targets=])
-
-ACX_CANONICAL_ACCEL_TARGET
 
 # Handle --enable-gold, --enable-ld.
 # --disable-gold [--enable-ld]
@@ -3223,6 +3219,7 @@ case " $configdirs " in
     test $host = $build && RUNTEST='$$s/$(HOST_SUBDIR)/dejagnu/runtest'
     ;;
 esac
+
 
 # Host tools.
 NCN_STRICT_CHECK_TOOLS(AR, ar)
