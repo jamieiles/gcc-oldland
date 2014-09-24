@@ -274,17 +274,8 @@ enum reg_class
 /* A C expression whose value is RTL representing the location of the
    incoming return address at the beginning of any function, before
    the prologue.  */
-#define INCOMING_RETURN_ADDR_RTX					\
-  gen_frame_mem (Pmode,							\
-		 plus_constant (Pmode, stack_pointer_rtx, UNITS_PER_WORD))
-
-/* Describe how we implement __builtin_eh_return.  */
-#define EH_RETURN_DATA_REGNO(N)	((N) < 4 ? (N+2) : INVALID_REGNUM)
-
-/* Store the return handler into the call frame.  */
-#define EH_RETURN_HANDLER_RTX						\
-  gen_frame_mem (Pmode,							\
-		 plus_constant (Pmode, frame_pointer_rtx, UNITS_PER_WORD))
+#define INCOMING_RETURN_ADDR_RTX	gen_rtx_REG (Pmode, OLDLAND_LR)
+#define DWARF_FRAME_RETURN_COLUMN DWARF_FRAME_REGNUM (OLDLAND_LR)
 
 /* Storage Layout */
 
