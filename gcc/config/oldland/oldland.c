@@ -175,7 +175,7 @@ static rtx oldland_function_arg(cumulative_args_t cum_v, enum machine_mode mode,
 {
 	CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
 
-	if (*cum < 6)
+	if (*cum <= OLDLAND_R5)
 		return gen_rtx_REG (mode, *cum);
 	else 
 		return NULL_RTX;
