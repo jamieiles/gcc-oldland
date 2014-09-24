@@ -319,13 +319,24 @@ oldland_print_operand (FILE *file, rtx x, int code)
 	}
 }
 
-int
-oldland_initial_elimination_offset (int from, int to)
+int oldland_initial_elimination_offset(int from, int to)
 {
-	(void)from;
-	(void)to;
+	int ret;
 
-	return 0;
+	if (from == FRAME_POINTER_REGNUM && to == HARD_FRAME_POINTER_REGNUM) {
+		/*
+		 * Compute this since we need to use
+		 * cfun->machine->local_vars_size
+		 */
+		oldland_compute_frame();
+		ret = -cfun->machine->callee_saved_reg_size;
+	} else if (from == ARG_POINTER_REGNUM &&
+		   to == HARD_FRAME_POINTER_REGNUM)
+		ret = 0x00;
+	else
+		abort ();
+
+	return ret;
 }
 
 static rtx oldland_function_value(const_tree valtype,
