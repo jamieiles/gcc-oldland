@@ -61,11 +61,16 @@
 ;; Arithmetic instructions
 ;; -------------------------------------------------------------------------
 
+(define_predicate "oldland_arith_operand"
+  (ior (match_code "reg")
+       (and (match_code "const_int")
+	    (match_test "IN_RANGE (INTVAL (op), -8192, 8191)"))))
+
 (define_insn "addsi3"
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	  (plus:SI
 	   (match_operand:SI 1 "register_operand" "r,r")
-	   (match_operand:SI 2 "register_operand" "r,I")))]
+	   (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
   "add	 %0, %1, %2")
 
@@ -73,7 +78,7 @@
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	  (minus:SI
 	   (match_operand:SI 1 "register_operand" "r,r")
-	   (match_operand:SI 2 "register_operand" "r,I")))]
+	   (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
   "sub	 %0, %1, %2")
 
@@ -81,7 +86,7 @@
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	  (mult:SI
 	   (match_operand:SI 1 "register_operand" "r,r")
-	   (match_operand:SI 2 "register_operand" "r,I")))]
+	   (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
   "mul	 %0, %1, %2")
 
@@ -92,7 +97,7 @@
 (define_insn "andsi3"
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	(and:SI (match_operand:SI 1 "register_operand" "r,r")
-		(match_operand:SI 2 "register_operand" "r,I")))]
+		(match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
 {
   return "and    %0, %1, %2";
@@ -101,7 +106,7 @@
 (define_insn "xorsi3"
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	(xor:SI (match_operand:SI 1 "register_operand" "r,r")
-		(match_operand:SI 2 "register_operand" "r,I")))]
+		(match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
 {
   return "xor    %0, %1, %2";
@@ -110,7 +115,7 @@
 (define_insn "iorsi3"
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	(ior:SI (match_operand:SI 1 "register_operand" "r,r")
-		(match_operand:SI 2 "register_operand" "r,I")))]
+		(match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
 {
   return "or     %0, %1, %2";
@@ -123,7 +128,7 @@
 (define_insn "ashlsi3"
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	(ashift:SI (match_operand:SI 1 "register_operand" "r,r")
-		   (match_operand:SI 2 "register_operand" "r,I")))]
+		   (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
 {
   return "lsl   %0, %1, %2";
@@ -132,7 +137,7 @@
 (define_insn "ashrsi3"
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	(ashiftrt:SI (match_operand:SI 1 "register_operand" "r,r")
-		     (match_operand:SI 2 "register_operand" "r,I")))]
+		     (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
 {
   return "asr   %0, %1, %2";
@@ -141,7 +146,7 @@
 (define_insn "lshrsi3"
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	(lshiftrt:SI (match_operand:SI 1 "register_operand" "r,r")
-		     (match_operand:SI 2 "register_operand" "r,I")))]
+		     (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
   ""
 {
   return "lsr   %0, %1, %2";
