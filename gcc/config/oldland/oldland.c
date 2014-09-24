@@ -27,6 +27,200 @@
 #include "langhooks.h"
 #include "df.h"
 
+/* Per-function machine data.  */
+struct GTY(()) machine_function {
+	/* Number of bytes saved on the stack for callee saved registers.  */
+	int callee_saved_reg_size;
+
+	/* Number of bytes saved on the stack for local variables.  */
+	int local_vars_size;
+
+	/* The sum of 2 sizes: locals vars and padding byte for saving the
+	 * registers.  Used in expand_prologue () and expand_epilogue().  */
+	int size_for_adjusting_sp;
+};
+
+/* Zero initialization is OK for all current fields.  */
+
+static struct machine_function *oldland_init_machine_status(void)
+{
+	return ggc_alloc_cleared_machine_function();
+}
+
+
+/* The TARGET_OPTION_OVERRIDE worker.
+   All this curently does is set init_machine_status.  */
+static void oldland_option_override(void)
+{
+	/* Set the per-function-data initializer.  */
+	init_machine_status = oldland_init_machine_status;
+}
+
+/*
+ * Oldland frame layout
+ *
+ * High address
+ *
+ * +-------------------+
+ * | caller            |
+ * +-------------------+
+ * | stack args        |
+ * +-------------------+ <-- SP at call ----------\
+ * | return address    |                          |
+ * +-------------------+                          |
+ * | saved fp          |                          |
+ * +-------------------+ <-- FP after prologue    |
+ * | callee saved regs |                          |
+ * +-------------------+                          |
+ * | locals            |                          |
+ * +-------------------+ <-- SP after prologue <--/
+ */
+
+/* Save return address + FP */
+#define OLDLAND_FRAME_SAVE_SIZE (4 * 2)
+
+static void oldland_compute_frame(void)
+{
+	/* For aligning the local variables.  */
+	int stack_alignment = STACK_BOUNDARY / BITS_PER_UNIT;
+	int padding_locals;
+	int regno;
+
+	/* Padding needed for each element of the frame.  */
+	cfun->machine->local_vars_size = get_frame_size();
+
+	/* Align to the stack alignment.  */
+	padding_locals = cfun->machine->local_vars_size % stack_alignment;
+	if (padding_locals)
+		padding_locals = stack_alignment - padding_locals;
+
+	cfun->machine->local_vars_size += padding_locals;
+
+	cfun->machine->callee_saved_reg_size = 0;
+
+	/* Save callee-saved registers.  */
+	for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
+		if (df_regs_ever_live_p (regno) && (! call_used_regs[regno]))
+			cfun->machine->callee_saved_reg_size += 4;
+
+	cfun->machine->size_for_adjusting_sp = 
+		OLDLAND_FRAME_SAVE_SIZE + 
+		crtl->args.pretend_args_size +
+		cfun->machine->local_vars_size +
+		(ACCUMULATE_OUTGOING_ARGS ? crtl->outgoing_args_size : 0);
+}
+
+static void frame_save_reg(int regno, int offset)
+{
+	rtx reg = gen_rtx_REG(Pmode, regno);
+
+	rtx slot = gen_frame_mem(SImode,
+				 gen_rtx_PLUS(Pmode, stack_pointer_rtx,
+					      GEN_INT(UNITS_PER_WORD * offset)));
+	emit_move_insn(slot, reg);
+}
+
+static void frame_load_reg(int regno, int offset)
+{
+	rtx reg = gen_rtx_REG(Pmode, regno);
+
+	rtx slot = gen_frame_mem(SImode,
+				 gen_rtx_PLUS(Pmode, stack_pointer_rtx,
+					      GEN_INT(UNITS_PER_WORD * offset)));
+	emit_move_insn(reg, slot);
+}
+
+static void set_new_fp(void)
+{
+	emit_insn(gen_subsi3(hard_frame_pointer_rtx, stack_pointer_rtx,
+			     GEN_INT(8)));
+}
+
+static void restore_fp(void)
+{
+	emit_insn(gen_addsi3(hard_frame_pointer_rtx, stack_pointer_rtx,
+			     GEN_INT(8)));
+}
+
+static void save_callee_save_regs(void)
+{
+	int regno;
+	int save_offs = -3; /* FP+LR already saved. */
+
+	if (flag_stack_usage_info)
+		current_function_static_stack_size = cfun->machine->size_for_adjusting_sp;
+
+	/* Save callee-saved registers.  */
+	for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
+		if (!fixed_regs[regno] && df_regs_ever_live_p(regno) &&
+		    !call_used_regs[regno])
+			frame_save_reg(regno, save_offs--);
+}
+
+static void restore_callee_save_regs(void)
+{
+	int regno;
+	int save_offs = -3; /* FP+LR already saved. */
+
+	if (flag_stack_usage_info)
+		current_function_static_stack_size = cfun->machine->size_for_adjusting_sp;
+
+	/* Save callee-saved registers.  */
+	for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
+		if (!fixed_regs[regno] && df_regs_ever_live_p(regno) &&
+		    !call_used_regs[regno])
+			frame_load_reg(regno, save_offs--);
+}
+
+static void set_new_sp(void)
+{
+	rtx insn;
+	int adjustment = cfun->machine->size_for_adjusting_sp;
+
+	if (adjustment == 0)
+		return;
+
+	insn = emit_insn(gen_subsi3(stack_pointer_rtx, stack_pointer_rtx,
+				    GEN_INT(adjustment)));
+	RTX_FRAME_RELATED_P(insn) = 1;
+}
+
+static void restore_sp(void)
+{
+	int adjustment = cfun->machine->size_for_adjusting_sp;
+
+	if (adjustment == 0)
+		return;
+
+	emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
+			     GEN_INT(adjustment)));
+}
+
+static void save_frame(void)
+{
+	frame_save_reg(OLDLAND_LR, -1);
+	frame_save_reg(OLDLAND_FP, -2);
+	set_new_fp();
+	save_callee_save_regs();
+	set_new_sp();
+}
+
+void oldland_expand_prologue(void)
+{
+	oldland_compute_frame();
+	save_frame();
+}
+
+void oldland_expand_epilogue(void)
+{
+	restore_sp();
+	restore_callee_save_regs();
+	restore_fp();
+	frame_load_reg(OLDLAND_FP, -2);
+	frame_load_reg(OLDLAND_LR, -1);
+	emit_jump_insn(gen_returner());
+}
+
 static void oldland_operand_lossage(const char *msgid, rtx op)
 {
 	debug_rtx(op);
@@ -264,4 +458,9 @@ static int oldland_arg_partial_bytes(cumulative_args_t cum_v,
 #undef TARGET_ASM_UNALIGNED_SI_OP
 #define TARGET_ASM_UNALIGNED_SI_OP ".long "
 
+#undef TARGET_OPTION_OVERRIDE
+#define TARGET_OPTION_OVERRIDE oldland_option_override
+
 struct gcc_target targetm = TARGET_INITIALIZER;
+
+#include "gt-oldland.h"

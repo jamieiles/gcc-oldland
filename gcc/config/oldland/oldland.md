@@ -395,6 +395,7 @@
   ""
   "
 {
+  oldland_expand_prologue();
   DONE;
 }
 ")
@@ -404,6 +405,7 @@
   ""
   "
 {
+  oldland_expand_epilogue();
   DONE;
 }
 ")
