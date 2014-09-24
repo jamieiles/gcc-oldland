@@ -156,24 +156,6 @@
 ;; Move instructions
 ;; -------------------------------------------------------------------------
 
-;; SImode
-
-;; ;; Push a register onto the stack
-;; (define_insn "movsi_push"
-;;   [(set (mem:SI (pre_dec:SI (reg:SI 1)))
-;;   	(match_operand:SI 0 "register_operand" "r"))]
-;;   ""
-;;   "@
-;;   sub	  $sp, $sp, 4
-;;   str32   %0, [$sp, 0]")
-;; 
-;; ;; Pop a register from the stack
-;; (define_insn "movsi_pop"
-;;   [(set (match_operand:SI 1 "register_operand" "=r")
-;;   	(mem:SI (post_inc:SI (match_operand:SI 0 "register_operand" "r"))))]
-;;   ""
-;;   "pop    %0, %1")
-
 (define_expand "movsi"
    [(set (match_operand:SI 0 "general_operand" "")
  	(match_operand:SI 1 "general_operand" ""))]
