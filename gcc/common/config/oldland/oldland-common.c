@@ -14,4 +14,7 @@ static const struct default_options oldland_option_optimization_table[] =
 #undef TARGET_OPTION_OPTIMIZATION_TABLE
 #define TARGET_OPTION_OPTIMIZATION_TABLE oldland_option_optimization_table
 
+#undef  TARGET_EXCEPT_UNWIND_INFO
+#define TARGET_EXCEPT_UNWIND_INFO		sjlj_except_unwind_info
+
 struct gcc_targetm_common targetm_common = TARGETM_COMMON_INITIALIZER;
