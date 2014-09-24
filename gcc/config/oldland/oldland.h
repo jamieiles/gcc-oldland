@@ -444,6 +444,18 @@ enum reg_class
 */
 #define GO_IF_LEGITIMATE_ADDRESS(MODE,X,LABEL)		\
   do {                                                  \
+    if (GET_CODE(X) == PLUS)				\
+      {							\
+	rtx op1,op2;					\
+	op1 = XEXP(X,0);				\
+	op2 = XEXP(X,1);				\
+	if (GET_CODE(op1) == REG			\
+	    && CONSTANT_ADDRESS_P(op2)			\
+	    && REGNO_OK_FOR_BASE_P(REGNO(op1))		\
+	    && INTVAL(op2) >= -8192			\
+	    && INTVAL(op2) <= 8191)			\
+	  goto LABEL;					\
+      }							\
     if (REG_P (X) && REGNO_OK_FOR_BASE_P (REGNO (X)))	\
       goto LABEL;					\
   } while (0)
