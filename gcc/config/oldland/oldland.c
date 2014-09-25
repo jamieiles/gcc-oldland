@@ -38,6 +38,7 @@ struct GTY(()) machine_function {
 	/* The sum of 2 sizes: locals vars and padding byte for saving the
 	 * registers.  Used in expand_prologue () and expand_epilogue().  */
 	int size_for_adjusting_sp;
+	int pretend_size;
 };
 
 /* Zero initialization is OK for all current fields.  */
@@ -66,6 +67,8 @@ static void oldland_option_override(void)
  * +-------------------+
  * | stack args        |
  * +-------------------+ <-- SP at call ----------\
+ * | pretend args      |                          |
+ * +-------------------+                          |
  * | return address    |                          |
  * +-------------------+                          |
  * | saved fp          |                          |
@@ -96,9 +99,8 @@ static void oldland_compute_frame(void)
 
 	cfun->machine->local_vars_size += padding_locals;
 
-	cfun->machine->callee_saved_reg_size = 0;
-
 	/* Save callee-saved registers.  */
+	cfun->machine->callee_saved_reg_size = 0;
 	for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
 		if (df_regs_ever_live_p (regno) && (! call_used_regs[regno]))
 			cfun->machine->callee_saved_reg_size += 4;
@@ -106,8 +108,10 @@ static void oldland_compute_frame(void)
 	cfun->machine->size_for_adjusting_sp = 
 		OLDLAND_FRAME_SAVE_SIZE + 
 		crtl->args.pretend_args_size +
+		cfun->machine->callee_saved_reg_size +
 		cfun->machine->local_vars_size +
 		(ACCUMULATE_OUTGOING_ARGS ? crtl->outgoing_args_size : 0);
+	cfun->machine->pretend_size = crtl->args.pretend_args_size;
 }
 
 static void frame_save_reg(int regno, int offset)
@@ -133,19 +137,19 @@ static void frame_load_reg(int regno, int offset)
 static void set_new_fp(void)
 {
 	emit_insn(gen_subsi3(hard_frame_pointer_rtx, stack_pointer_rtx,
-			     GEN_INT(8)));
+			     GEN_INT(8 + cfun->machine->pretend_size)));
 }
 
 static void restore_fp(void)
 {
 	emit_insn(gen_addsi3(hard_frame_pointer_rtx, stack_pointer_rtx,
-			     GEN_INT(8)));
+			     GEN_INT(8 + cfun->machine->pretend_size)));
 }
 
 static void save_callee_save_regs(void)
 {
 	int regno;
-	int save_offs = -3; /* FP+LR already saved. */
+	int save_offs = -3 - (cfun->machine->pretend_size / UNITS_PER_WORD); /* FP+LR already saved along with pretend args. */
 
 	if (flag_stack_usage_info)
 		current_function_static_stack_size = cfun->machine->size_for_adjusting_sp;
@@ -160,7 +164,7 @@ static void save_callee_save_regs(void)
 static void restore_callee_save_regs(void)
 {
 	int regno;
-	int save_offs = -3; /* FP+LR already saved. */
+	int save_offs = -3 - (cfun->machine->pretend_size / UNITS_PER_WORD); /* FP+LR already saved along with pretend args. */
 
 	if (flag_stack_usage_info)
 		current_function_static_stack_size = cfun->machine->size_for_adjusting_sp;
@@ -198,8 +202,8 @@ static void restore_sp(void)
 
 static void save_frame(void)
 {
-	frame_save_reg(OLDLAND_LR, -1);
-	frame_save_reg(OLDLAND_FP, -2);
+	frame_save_reg(OLDLAND_LR, -1 - cfun->machine->pretend_size / UNITS_PER_WORD);
+	frame_save_reg(OLDLAND_FP, -2 - cfun->machine->pretend_size / UNITS_PER_WORD);
 	set_new_fp();
 	save_callee_save_regs();
 	set_new_sp();
@@ -216,8 +220,8 @@ void oldland_expand_epilogue(void)
 	restore_sp();
 	restore_callee_save_regs();
 	restore_fp();
-	frame_load_reg(OLDLAND_FP, -2);
-	frame_load_reg(OLDLAND_LR, -1);
+	frame_load_reg(OLDLAND_FP, -2 - cfun->machine->pretend_size / UNITS_PER_WORD);
+	frame_load_reg(OLDLAND_LR, -1 - cfun->machine->pretend_size / UNITS_PER_WORD);
 	emit_jump_insn(gen_returner());
 }
 
@@ -339,6 +343,31 @@ int oldland_initial_elimination_offset(int from, int to)
 	return ret;
 }
 
+static void oldland_setup_incoming_varargs(cumulative_args_t cum_v,
+					   enum machine_mode mode ATTRIBUTE_UNUSED,
+					   tree type ATTRIBUTE_UNUSED,
+					   int *pretend_size, int no_rtl)
+{
+	CUMULATIVE_ARGS *cum = get_cumulative_args(cum_v);
+	int regno;
+	int regs = (OLDLAND_R5 + 1) - *cum;
+
+	*pretend_size = regs < 0 ? 0 : GET_MODE_SIZE (SImode) * regs;
+
+	if (no_rtl)
+		return;
+
+	for (regno = *cum; regno <= OLDLAND_R5; regno++) {
+		rtx reg = gen_rtx_REG (SImode, regno);
+		rtx slot = gen_rtx_PLUS (Pmode, arg_pointer_rtx,
+					 GEN_INT (UNITS_PER_WORD * (regno + 3)));
+
+		emit_move_insn(gen_rtx_MEM (SImode, slot), reg);
+	}
+}
+#undef  TARGET_SETUP_INCOMING_VARARGS
+#define TARGET_SETUP_INCOMING_VARARGS 	oldland_setup_incoming_varargs
+
 static rtx oldland_function_value(const_tree valtype,
 				  const_tree fntype_or_decl ATTRIBUTE_UNUSED,
 				  bool outgoing ATTRIBUTE_UNUSED)
@@ -433,7 +462,7 @@ static int oldland_arg_partial_bytes(cumulative_args_t cum_v,
 	CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
 	int bytes_left, size;
 
-	if (*cum >= 8)
+	if (*cum > OLDLAND_R5)
 		return 0;
 
 	if (oldland_pass_by_reference (cum_v, mode, type, named))
@@ -445,7 +474,7 @@ static int oldland_arg_partial_bytes(cumulative_args_t cum_v,
 	} else
 		size = GET_MODE_SIZE (mode);
 
-	bytes_left = (4 * 6) - ((*cum - 2) * 4);
+	bytes_left = (4 * 6) - (*cum * 4);
 
 	if (size > bytes_left)
 		return bytes_left;

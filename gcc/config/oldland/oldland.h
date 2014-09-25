@@ -138,8 +138,8 @@ enum reg_class
 			      0, 1, 1, 1, \
 			      1, 1, 1, 1 }
 
-#define CALL_USED_REGISTERS { 1, 0, 0, 0, \
-			      0, 0, 0, 0, \
+#define CALL_USED_REGISTERS { 1, 1, 1, 1, \
+			      1, 1, 0, 0, \
 			      0, 0, 0, 0, \
 			      0, 1, 1, 1, \
 			      1, 1, 1, 1, }

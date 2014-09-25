@@ -269,6 +269,7 @@ moxie_compute_frame (void)
 
   cfun->machine->size_for_adjusting_sp = 
     crtl->args.pretend_args_size
+    + cfun->machine->calle_saved_reg_size
     + cfun->machine->local_vars_size 
     + (ACCUMULATE_OUTGOING_ARGS ? crtl->outgoing_args_size : 0);
 }
