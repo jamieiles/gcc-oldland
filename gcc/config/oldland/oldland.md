@@ -254,6 +254,30 @@
    str16  %1, %0	/* B, r */
    ldr16  %0, %1        /* r, B */")
 
+(define_expand "zero_extendqisi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(zero_extend:SI (match_operand:QI 1 "register_operand" "r")))]
+  ""
+  "")
+
+(define_insn "zero_extendqisi2_insn"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (zero_extend:SI (match_operand:QI 1 "register_operand" "r")))]
+  ""
+  "mov	%0, %1")
+
+(define_expand "zero_extendhisi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(zero_extend:SI (match_operand:HI 1 "register_operand" "r")))]
+  ""
+  "")
+
+(define_insn "zero_extendhisi2_insn"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+        (zero_extend:SI (match_operand:HI 1 "register_operand" "r")))]
+  ""
+  "mov	%0, %1")
+
 ;; -------------------------------------------------------------------------
 ;; Compare instructions
 ;; -------------------------------------------------------------------------
