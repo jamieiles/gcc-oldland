@@ -336,7 +336,7 @@ int oldland_initial_elimination_offset(int from, int to)
 		ret = -cfun->machine->callee_saved_reg_size;
 	} else if (from == ARG_POINTER_REGNUM &&
 		   to == HARD_FRAME_POINTER_REGNUM)
-		ret = 0x00;
+		ret = 8;
 	else
 		abort ();
 
@@ -350,19 +350,19 @@ static void oldland_setup_incoming_varargs(cumulative_args_t cum_v,
 {
 	CUMULATIVE_ARGS *cum = get_cumulative_args(cum_v);
 	int regno;
-	int regs = (OLDLAND_R5 + 1) - *cum;
-
-	*pretend_size = regs < 0 ? 0 : GET_MODE_SIZE (SImode) * regs;
 
 	if (no_rtl)
 		return;
 
-	for (regno = *cum; regno <= OLDLAND_R5; regno++) {
+	*pretend_size = 0;
+
+	for (regno = *cum + 1; regno <= OLDLAND_R5; regno++) {
 		rtx reg = gen_rtx_REG (SImode, regno);
 		rtx slot = gen_rtx_PLUS (Pmode, arg_pointer_rtx,
-					 GEN_INT (UNITS_PER_WORD * regno));
+					 GEN_INT (UNITS_PER_WORD * (regno - (*cum + 1))));
 
 		emit_move_insn(gen_rtx_MEM (SImode, slot), reg);
+		*pretend_size += GET_MODE_SIZE(SImode);
 	}
 }
 #undef  TARGET_SETUP_INCOMING_VARARGS
