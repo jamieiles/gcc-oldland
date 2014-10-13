@@ -360,7 +360,7 @@ static void oldland_setup_incoming_varargs(cumulative_args_t cum_v,
 	for (regno = *cum; regno <= OLDLAND_R5; regno++) {
 		rtx reg = gen_rtx_REG (SImode, regno);
 		rtx slot = gen_rtx_PLUS (Pmode, arg_pointer_rtx,
-					 GEN_INT (UNITS_PER_WORD * (regno + 3)));
+					 GEN_INT (UNITS_PER_WORD * regno));
 
 		emit_move_insn(gen_rtx_MEM (SImode, slot), reg);
 	}
@@ -428,9 +428,7 @@ static void oldland_function_arg_advance(cumulative_args_t cum_v,
 {
 	CUMULATIVE_ARGS *cum = get_cumulative_args (cum_v);
 
-	*cum = (*cum <= OLDLAND_R5
-		? *cum + ((3 + OLDLAND_FUNCTION_ARG_SIZE (mode, type)) / 4)
-		: *cum);
+	*cum += ((3 + OLDLAND_FUNCTION_ARG_SIZE (mode, type)) / 4);
 }
 #undef  TARGET_FUNCTION_ARG_ADVANCE
 #define TARGET_FUNCTION_ARG_ADVANCE oldland_function_arg_advance

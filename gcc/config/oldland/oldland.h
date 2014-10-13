@@ -260,7 +260,7 @@ enum reg_class
 /* Offset from the argument pointer register to the first argument's
    address.  On some machines it may depend on the data type of the
    function.  */
-#define FIRST_PARM_OFFSET(F) 12
+#define FIRST_PARM_OFFSET(F) 0
 
 /* Define this macro to nonzero value if the addresses of local variable slots
    are at negative offsets from the frame pointer.  */
