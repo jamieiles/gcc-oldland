@@ -48,6 +48,9 @@
 ; All instructions are four bytes long.
 (define_attr "length" "" (const_int 4))
 
+(define_constants
+  [(CC_REG 19)])
+
 ;; -------------------------------------------------------------------------
 ;; nop instruction
 ;; -------------------------------------------------------------------------
@@ -70,7 +73,8 @@
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	  (plus:SI
 	   (match_operand:SI 1 "register_operand" "r,r")
-	   (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
+	   (match_operand:SI 2 "oldland_arith_operand" "r,I")))
+  (clobber (reg:CC CC_REG))]
   ""
   "add	 %0, %1, %2")
 
@@ -78,7 +82,8 @@
   [(set (match_operand:SI 0 "register_operand" "=r,=r")
 	  (minus:SI
 	   (match_operand:SI 1 "register_operand" "r,r")
-	   (match_operand:SI 2 "oldland_arith_operand" "r,I")))]
+	   (match_operand:SI 2 "oldland_arith_operand" "r,I")))
+  (clobber (reg:CC CC_REG))]
   ""
   "sub	 %0, %1, %2")
 
@@ -258,9 +263,6 @@
 ;; Compare instructions
 ;; -------------------------------------------------------------------------
 
-(define_constants
-  [(CC_REG 19)])
-
 (define_expand "cbranchsi4"
   [(set (reg:CC CC_REG)
         (compare:CC
@@ -348,7 +350,7 @@
 }")
 
 (define_insn "*call_value"
-  [(set (match_operand 0 "register_operand" "=r,r")
+  [(set (match_operand 0 "register_operand" "=r,=r")
 	(call (mem:QI (match_operand:SI 1 "call_operand" "r,s"))
 	      (match_operand 2 "" "")))]
   ""
