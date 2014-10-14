@@ -92,7 +92,7 @@
 
 (define_insn "one_cmplsi2"
   [(set (match_operand:SI 0 "register_operand" "=r")
-	  (neg:SI (match_operand:SI 1 "register_operand" "r")))]
+	  (not:SI (match_operand:SI 1 "register_operand" "r")))]
   ""
   "xor    %0, %1, -1")
 
