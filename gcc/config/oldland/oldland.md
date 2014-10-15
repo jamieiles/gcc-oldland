@@ -26,9 +26,9 @@
 		    && REGNO_OK_FOR_BASE_P (REGNO (XEXP (op, 0)))")))
 
 (define_constraint "I"
-  "An 13-bit signed constant (-8192..8191)"
+  "An 13-bit signed constant (-4096..4095)"
   (and (match_code "const_int")
-       (match_test "ival >= -8192 && ival <= 8191")))
+       (match_test "ival >= -4096 && ival <= 4095")))
 
 (define_predicate "oldland_general_movsrc_operand"
   (match_code "mem,const_int,reg,subreg,symbol_ref,label_ref,const")

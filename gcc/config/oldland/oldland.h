@@ -443,8 +443,8 @@ enum reg_class
 	if (GET_CODE(op1) == REG			\
 	    && CONSTANT_ADDRESS_P(op2)			\
 	    && REGNO_OK_FOR_BASE_P(REGNO(op1))		\
-	    && INTVAL(op2) >= -8192			\
-	    && INTVAL(op2) <= 8191)			\
+	    && INTVAL(op2) >= -4096			\
+	    && INTVAL(op2) <= 4095)			\
 	  goto LABEL;					\
       }							\
     if (REG_P (X) && REGNO_OK_FOR_BASE_P (REGNO (X)))	\
