@@ -179,25 +179,45 @@ static void restore_callee_save_regs(void)
 static void set_new_sp(void)
 {
 	rtx insn;
-	int adjustment = cfun->machine->size_for_adjusting_sp;
+	int adjusted = 0, adjustment = cfun->machine->size_for_adjusting_sp;
 
 	if (adjustment == 0)
 		return;
 
-	insn = emit_insn(gen_subsi3(stack_pointer_rtx, stack_pointer_rtx,
-				    GEN_INT(adjustment)));
-	RTX_FRAME_RELATED_P(insn) = 1;
+	while (adjusted != adjustment) {
+		int this_adjustment = adjustment - adjusted;
+
+		if (this_adjustment > 4096)
+			this_adjustment = 4096;
+		insn = emit_insn(gen_addsi3(stack_pointer_rtx,
+					    stack_pointer_rtx,
+					    GEN_INT(-this_adjustment)));
+		RTX_FRAME_RELATED_P(insn) = 1;
+
+		adjusted += this_adjustment;
+	}
 }
 
 static void restore_sp(void)
 {
-	int adjustment = cfun->machine->size_for_adjusting_sp;
+	rtx insn;
+	int adjusted = 0, adjustment = cfun->machine->size_for_adjusting_sp;
 
 	if (adjustment == 0)
 		return;
 
-	emit_insn(gen_addsi3(stack_pointer_rtx, stack_pointer_rtx,
-			     GEN_INT(adjustment)));
+	while (adjusted != adjustment) {
+		int this_adjustment = adjustment - adjusted;
+
+		if (this_adjustment > 4095)
+			this_adjustment = 4095;
+		insn = emit_insn(gen_addsi3(stack_pointer_rtx,
+					    stack_pointer_rtx,
+					    GEN_INT(this_adjustment)));
+		RTX_FRAME_RELATED_P(insn) = 1;
+
+		adjusted += this_adjustment;
+	}
 }
 
 static void save_frame(void)
