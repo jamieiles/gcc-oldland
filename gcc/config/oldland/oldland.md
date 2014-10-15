@@ -203,7 +203,8 @@
    ldr32  %0, %1	/* r, A */
    str32  %1, %0	/* W, r */
    str32  %1, %0	/* B, r */
-   ldr32  %0, %1        /* r, B */")
+   ldr32  %0, %1        /* r, B */"
+  [(set_attr "length" "4,8,4,4,4,4,4,4,4")])
 
 (define_expand "movqi"
   [(set (match_operand:QI 0 "general_operand" "")
@@ -230,7 +231,8 @@
    ldr8  %0, %1	/* r, A */
    str8  %1, %0	/* W, r */
    str8  %1, %0	/* B, r */
-   ldr8  %0, %1        /* r, B */")
+   ldr8  %0, %1        /* r, B */"
+  [(set_attr "length" "4,8,4,4,4,4,4,4,4")])
 
 (define_expand "movhi"
   [(set (match_operand:HI 0 "general_operand" "")
@@ -257,7 +259,8 @@
    ldr16  %0, %1	/* r, A */
    str16  %1, %0	/* W, r */
    str16  %1, %0	/* B, r */
-   ldr16  %0, %1        /* r, B */")
+   ldr16  %0, %1        /* r, B */"
+  [(set_attr "length" "4,8,4,4,4,4,4,4,4")])
 
 ;; -------------------------------------------------------------------------
 ;; Compare instructions
