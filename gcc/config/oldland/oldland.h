@@ -462,4 +462,14 @@ enum reg_class
 
 #define HAS_LONG_UNCOND_BRANCH false
 
+#undef CRT_CALL_STATIC_FUNCTION
+#define CRT_CALL_STATIC_FUNCTION(SECTION_OP, FUNC) \
+  asm (SECTION_OP "\n\
+       sub      $sp, $sp, 4\n\
+       str32    $lr, [$sp, 0]\n\
+       call     " USER_LABEL_PREFIX #FUNC "\n\
+       ldr32    $lr, [$sp, 0]\n\
+       add      $sp, $sp, 4\n\
+       " TEXT_SECTION_ASM_OP);
+
 #endif /* GCC_OLDLAND_H */
