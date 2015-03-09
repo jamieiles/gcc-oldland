@@ -1,0 +1,3 @@
+mnewlib
+Target RejectNegative
+Link with the newlib library for the Keynsham SoC.

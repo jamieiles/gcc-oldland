@@ -1049,6 +1049,7 @@ oldland-*-elf)
 	gnu_ld=yes
 	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h"
 	tmake_file="${tmake_file} oldland/t-oldland"
+	extra_options="${extra_options} oldland/oldland.opt"
 	;;
 h8300-*-rtems*)
 	tmake_file="h8300/t-h8300 t-rtems h8300/t-rtems"

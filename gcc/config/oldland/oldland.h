@@ -37,10 +37,10 @@
    the simulator BSP code.  */
 
 #undef LIB_SPEC
-#define LIB_SPEC "%{!shared:%{!symbolic:-lc}}"
+#define LIB_SPEC "%{!shared:%{!symbolic:-lc}} %{mnewlib:%{!g:-lc -lkeynsham -lc} %{g:-lg -lkeynsham -lg}}"
 
 #undef  LINK_SPEC
-#define LINK_SPEC "%{h*} %{v:-V}\
+#define LINK_SPEC "%{h*} %{v:-V} %{mnewlib:-T keynsham.ld}\
 		   %{static:-Bstatic} %{shared:-shared} %{symbolic:-Bsymbolic}"
 
 #ifndef MULTILIB_DEFAULTS
