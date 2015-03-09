@@ -40,7 +40,7 @@
 #define LIB_SPEC "%{!shared:%{!symbolic:-lc}}"
 
 #undef  LINK_SPEC
-#define LINK_SPEC "%{h*} %{v:-V} %{!mel:-EB} %{mel:-EL}\
+#define LINK_SPEC "%{h*} %{v:-V}\
 		   %{static:-Bstatic} %{shared:-shared} %{symbolic:-Bsymbolic}"
 
 #ifndef MULTILIB_DEFAULTS
