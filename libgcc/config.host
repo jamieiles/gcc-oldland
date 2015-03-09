@@ -801,6 +801,7 @@ moxie-*-rtems*)
 	;;
 oldland-*-elf)
 	tmake_file="oldland/t-oldland"
+	extra_parts="$extra_parts crti.o crtn.o"
 	;;
 pdp11-*-*)
 	tmake_file="pdp11/t-pdp11 t-fdpbit"
