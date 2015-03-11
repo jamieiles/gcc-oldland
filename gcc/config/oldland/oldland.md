@@ -334,7 +334,7 @@
 
 (define_insn "*call"
   [(call (mem:QI (match_operand:SI
-		  0 "call_operand" "s,r"))
+		  0 "call_operand" "r"))
 	 (match_operand 1 "" ""))]
   ""
   "call	  %0")
