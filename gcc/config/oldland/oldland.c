@@ -124,12 +124,22 @@ static void frame_save_reg(int regno, int offset)
 	emit_move_insn(slot, reg);
 }
 
-static void frame_load_reg(int regno, int offset)
+static void frame_save_reg_from_fp(int regno, int offset)
 {
 	rtx reg = gen_rtx_REG(Pmode, regno);
 
 	rtx slot = gen_frame_mem(SImode,
-				 gen_rtx_PLUS(Pmode, stack_pointer_rtx,
+				 gen_rtx_PLUS(Pmode, hard_frame_pointer_rtx,
+					      GEN_INT(UNITS_PER_WORD * offset)));
+	emit_move_insn(slot, reg);
+}
+
+static void frame_load_reg_from_fp(int regno, int offset)
+{
+	rtx reg = gen_rtx_REG(Pmode, regno);
+
+	rtx slot = gen_frame_mem(SImode,
+				 gen_rtx_PLUS(Pmode, hard_frame_pointer_rtx,
 					      GEN_INT(UNITS_PER_WORD * offset)));
 	emit_move_insn(reg, slot);
 }
@@ -140,40 +150,34 @@ static void set_new_fp(void)
 			     GEN_INT(8 + cfun->machine->pretend_size)));
 }
 
-static void restore_fp(void)
-{
-	emit_insn(gen_addsi3(hard_frame_pointer_rtx, stack_pointer_rtx,
-			     GEN_INT(8 + cfun->machine->pretend_size)));
-}
-
 static void save_callee_save_regs(void)
 {
 	int regno;
-	int save_offs = -3 - (cfun->machine->pretend_size / UNITS_PER_WORD); /* FP+LR already saved along with pretend args. */
+	int save_offs = -1;
 
 	if (flag_stack_usage_info)
 		current_function_static_stack_size = cfun->machine->size_for_adjusting_sp;
 
 	/* Save callee-saved registers.  */
-	for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
+	for (regno = FIRST_PSEUDO_REGISTER; regno >= OLDLAND_R0; regno--)
 		if (!fixed_regs[regno] && df_regs_ever_live_p(regno) &&
 		    !call_used_regs[regno])
-			frame_save_reg(regno, save_offs--);
+			frame_save_reg_from_fp(regno, save_offs--);
 }
 
 static void restore_callee_save_regs(void)
 {
 	int regno;
-	int save_offs = -3 - (cfun->machine->pretend_size / UNITS_PER_WORD); /* FP+LR already saved along with pretend args. */
+	int save_offs = -1;
 
 	if (flag_stack_usage_info)
 		current_function_static_stack_size = cfun->machine->size_for_adjusting_sp;
 
-	/* Save callee-saved registers.  */
-	for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
+	/* Restore callee-saved registers.  */
+	for (regno = FIRST_PSEUDO_REGISTER; regno >= OLDLAND_R0; regno--)
 		if (!fixed_regs[regno] && df_regs_ever_live_p(regno) &&
 		    !call_used_regs[regno])
-			frame_load_reg(regno, save_offs--);
+			frame_load_reg_from_fp(regno, save_offs--);
 }
 
 static void set_new_sp(void)
@@ -225,8 +229,8 @@ static void save_frame(void)
 	frame_save_reg(OLDLAND_LR, -1 - cfun->machine->pretend_size / UNITS_PER_WORD);
 	frame_save_reg(OLDLAND_FP, -2 - cfun->machine->pretend_size / UNITS_PER_WORD);
 	set_new_fp();
-	save_callee_save_regs();
 	set_new_sp();
+	save_callee_save_regs();
 }
 
 void oldland_expand_prologue(void)
@@ -237,11 +241,10 @@ void oldland_expand_prologue(void)
 
 void oldland_expand_epilogue(void)
 {
-	restore_sp();
 	restore_callee_save_regs();
-	restore_fp();
-	frame_load_reg(OLDLAND_FP, -2 - cfun->machine->pretend_size / UNITS_PER_WORD);
-	frame_load_reg(OLDLAND_LR, -1 - cfun->machine->pretend_size / UNITS_PER_WORD);
+	restore_sp();
+	frame_load_reg_from_fp(OLDLAND_LR, 1);
+	frame_load_reg_from_fp(OLDLAND_FP, 0);
 	emit_jump_insn(gen_returner());
 }
 
