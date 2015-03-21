@@ -262,6 +262,44 @@
    ldr16  %0, %1        /* r, B */"
   [(set_attr "length" "4,8,4,4,4,4,4,4,4")])
 
+(define_insn "zero_extendqisi2"
+ [(set (match_operand:SI 0 "register_operand" "=r,r,r,r")
+   (zero_extend:SI (match_operand:QI 1 "nonimmediate_operand" "r,W,A,B")))]
+  ""
+  "@
+   and	  %0, %1, 0xff  /* r, r */
+   ldr8   %0, %1	/* r, W */
+   ldr8   %0, %1	/* r, A */
+   ldr8   %0, %1        /* r, B */"
+  [(set_attr "length" "4,4,4,4")])
+
+(define_insn "zero_extendhisi2"
+ [(set (match_operand:SI 0 "register_operand" "=r,r,r,r")
+   (zero_extend:SI (match_operand:HI 1 "nonimmediate_operand" "r,W,A,B")))]
+  ""
+  "@
+   lsl     %0, %1, 16\n\tlsr       %0, %0, 16
+   ldr16   %0, %1	/* r, W */
+   ldr16   %0, %1	/* r, A */
+   ldr16   %0, %1       /* r, B */"
+  [(set_attr "length" "8,4,4,4")])
+
+(define_insn "extendqisi2"
+ [(set (match_operand:SI 0 "register_operand" "=r")
+  (sign_extend:SI (match_operand:QI 1 "nonimmediate_operand" "r")))]
+ ""
+ "@
+ lsl	%0, %1, 24\n\tasr	%0, %0, 24"
+ [(set_attr "length" "8")])
+
+(define_insn "extendhisi2"
+ [(set (match_operand:SI 0 "register_operand" "=r")
+  (sign_extend:SI (match_operand:HI 1 "nonimmediate_operand" "r")))]
+ ""
+ "@
+ lsl	%0, %1, 16\n\tasr	%0, %0, 16"
+ [(set_attr "length" "8")])
+
 ;; -------------------------------------------------------------------------
 ;; Compare instructions
 ;; -------------------------------------------------------------------------

@@ -67,7 +67,7 @@
 #define PTRDIFF_TYPE "int"
 
 #undef  WCHAR_TYPE
-#define WCHAR_TYPE "long int"
+#define WCHAR_TYPE "unsigned int"
 
 #undef  WCHAR_TYPE_SIZE
 #define WCHAR_TYPE_SIZE BITS_PER_WORD
