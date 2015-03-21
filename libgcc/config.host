@@ -800,11 +800,11 @@ moxie-*-rtems*)
 	extra_parts=
 	;;
 oldland-*-elf)
-	tmake_file="oldland/t-oldland t-softfp-sfdf t-softfp-excl t-softfp"
+	tmake_file="oldland/t-oldland t-softfp-sfdf t-softfp"
 	extra_parts="$extra_parts crti.o crtn.o"
 	;;
 oldland-*-rtems*)
-	tmake_file="$tmake_file oldland/t-oldland t-softfp-sfdf t-softfp-excl t-softfp"
+	tmake_file="$tmake_file oldland/t-oldland t-softfp-sfdf t-softfp"
 	extra_parts=
 	;;
 pdp11-*-*)
