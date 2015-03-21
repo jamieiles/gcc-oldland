@@ -190,12 +190,13 @@
 }")
 
 (define_insn "*movsi"
-  [(set (match_operand:SI 0 "general_operand" "=r,=r,=r,=A,=r,=r,=W,=B,=r")
-	(match_operand:SI 1 "oldland_general_movsrc_operand" "O,r,i,r,W,A,r,r,B"))]
+  [(set (match_operand:SI 0 "general_operand" "=r,=r,=r,=r,=A,=r,=r,=W,=B,=r")
+	(match_operand:SI 1 "oldland_general_movsrc_operand" "O,I,r,i,r,W,A,r,r,B"))]
   "register_operand (operands[0], SImode)
    || register_operand (operands[1], SImode)"
   "@
    mov    %0, 0		/* =r, 0 */
+   mov    %0, %1	/* r, I */
    mov    %0, %1	/* r, r */
    movhi  %0, %%hi(%1)\n\torlo %0, %0, %%lo(%1) /* r, i */
    str32  %1, %0	/* A, r */
@@ -204,7 +205,7 @@
    str32  %1, %0	/* W, r */
    str32  %1, %0	/* B, r */
    ldr32  %0, %1        /* r, B */"
-  [(set_attr "length" "4,8,4,4,4,4,4,4,4")])
+  [(set_attr "length" "4,4,8,4,4,4,4,4,4,4")])
 
 (define_expand "movqi"
   [(set (match_operand:QI 0 "general_operand" "")
@@ -218,12 +219,13 @@
 }")
 
 (define_insn "*movqi"
-  [(set (match_operand:QI 0 "general_operand" "=r,=r,=r,=A,=r,=r,=W,=B,=r")
-	(match_operand:QI 1 "oldland_general_movsrc_operand" "O,r,i,r,W,A,r,r,B"))]
+  [(set (match_operand:QI 0 "general_operand" "=r,=r,=r,=r,=A,=r,=r,=W,=B,=r")
+	(match_operand:QI 1 "oldland_general_movsrc_operand" "O,I,r,i,r,W,A,r,r,B"))]
   "register_operand (operands[0], QImode)
    || register_operand (operands[1], QImode)"
   "@
    mov    %0, 0		/* =r, 0 */
+   mov    %0, %1	/* r, I */
    mov    %0, %1	/* r, r */
    mov	 %0, %1
    str8  %1, %0	/* A, r */
@@ -232,7 +234,7 @@
    str8  %1, %0	/* W, r */
    str8  %1, %0	/* B, r */
    ldr8  %0, %1        /* r, B */"
-  [(set_attr "length" "4,8,4,4,4,4,4,4,4")])
+  [(set_attr "length" "4,4,8,4,4,4,4,4,4,4")])
 
 (define_expand "movhi"
   [(set (match_operand:HI 0 "general_operand" "")
@@ -246,12 +248,13 @@
 }")
 
 (define_insn "*movhi"
-  [(set (match_operand:HI 0 "general_operand" "=r,=r,=r,=A,=r,=r,=W,=B,=r")
-	(match_operand:HI 1 "oldland_general_movsrc_operand" "O,r,i,r,W,A,r,r,B"))]
+  [(set (match_operand:HI 0 "general_operand" "=r,=r,=r,=r,=A,=r,=r,=W,=B,=r")
+	(match_operand:HI 1 "oldland_general_movsrc_operand" "O,I,r,i,r,W,A,r,r,B"))]
   "register_operand (operands[0], HImode)
    || register_operand (operands[1], HImode)"
   "@
    mov    %0, 0		/* =r, 0 */
+   mov    %0, %1	/* r, I */
    mov    %0, %1	/* r, r */
    movhi  %0, %%hi(%1)\n\torlo %0, %0, %%lo(%1) /* r, i */
    str16  %1, %0	/* A, r */
@@ -260,7 +263,7 @@
    str16  %1, %0	/* W, r */
    str16  %1, %0	/* B, r */
    ldr16  %0, %1        /* r, B */"
-  [(set_attr "length" "4,8,4,4,4,4,4,4,4")])
+  [(set_attr "length" "4,4,8,4,4,4,4,4,4,4")])
 
 (define_insn "zero_extendqisi2"
  [(set (match_operand:SI 0 "register_operand" "=r,r,r,r")
